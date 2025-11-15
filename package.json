@@ -7,15 +7,27 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "dev:backend": "node --loader ts-node/esm backend/src/server.ts",
+    "build:backend": "tsc -p backend/tsconfig.json"
   },
   "dependencies": {
+    "@daytonaio/sdk": "^0.115.0",
+    "@types/cors": "^2.8.19",
+    "axios": "^1.13.2",
+    "body-parser": "^2.2.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
     "matter-js": "^0.20.0",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "youtube-transcript": "^1.2.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@types/express": "^5.0.5",
+    "@types/node": "^24.10.1",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
     "@vitejs/plugin-react": "^5.1.0",
@@ -26,6 +38,8 @@
     "globals": "^16.5.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.18",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.9.3",
     "vite": "^7.2.2"
   }
 }

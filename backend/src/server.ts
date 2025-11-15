@@ -1,27 +1,33 @@
-import express from 'express';
-import { testSandbox } from './services/daytonaClient';
+import "dotenv/config";
+import express from "express";
+import bodyParser from "body-parser";
+import cors from "cors";
+import parseDocumentRoute from "./routes/parseDocument.js";
+import youtubeParseRoute from "./routes/youtubeParse.js";
 
 const app = express();
-
-app.use(express.json());
-
-app.get('/api/daytona-test', async (req, res) => {
-  try {
-    const result = await testSandbox();
-    res.json({ success: true, result });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, error: String(error) });
-  }
-});
-
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
-
 const PORT = process.env.PORT || 3001;
 
+// Allow frontend dev server to call backend
+app.use(
+  cors({
+    origin: "http://localhost:5174", // your Vite dev URL
+  })
+);
+
+app.use(bodyParser.json());
+
+// Health check
+app.get("/api/health", (_req, res) => {
+  res.json({ ok: true, message: "Backend up" });
+});
+
+// Daytona-powered route
+app.use("/api", parseDocumentRoute);
+
+// NEW: YouTube parser route
+app.use("/api", youtubeParseRoute);
+
 app.listen(PORT, () => {
-  console.log(`Backend server running on http://localhost:${PORT}`);
+  console.log("Backend running on port " + PORT);
 });

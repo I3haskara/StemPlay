@@ -1,30 +1,88 @@
 // =====================================
 // File: src/components/FormulaSimulator.tsx
 // =====================================
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
-export const FormulaSimulator: React.FC = () => {
-  // Simple F = m * a playground
-  const [mass, setMass] = useState(5); // kg
+interface FormulaSimulatorProps {
+  sourceLabel?: string;
+  formulaText?: string;
+}
+
+export const FormulaSimulator: React.FC<FormulaSimulatorProps> = ({
+  sourceLabel,
+  formulaText,
+}) => {
+  const [mass, setMass] = useState(4); // kg
   const [acc, setAcc] = useState(2); // m/s^2
   const [running, setRunning] = useState(false);
+  const [hasRunOnce, setHasRunOnce] = useState(false);
 
-  const force = mass * acc; // Newtons
+  const force = mass * acc;
   const maxForce = 100;
   const clampedForce = Math.min(force, maxForce);
-  const distanceScale = 3; // px per N (clamped)
+  const distanceScale = 2.3; // px per N (clamped)
   const travel = clampedForce * distanceScale;
 
+  // 🔍 Mini-parser: pick "m = 4" / "a = 2" out of the text box if present
+  useEffect(() => {
+    if (!formulaText) return;
+
+    const mMatch = formulaText.match(/m\s*=\s*([\d.]+)/i);
+    const aMatch = formulaText.match(/a\s*=\s*([\d.]+)/i);
+
+    if (mMatch) {
+      const mVal = parseFloat(mMatch[1]);
+      if (!Number.isNaN(mVal) && mVal > 0) setMass(mVal);
+    }
+    if (aMatch) {
+      const aVal = parseFloat(aMatch[1]);
+      if (!Number.isNaN(aVal) && aVal >= 0) setAcc(aVal);
+    }
+  }, [formulaText]);
+
   const handleRun = () => {
-    // toggle animation by flipping "running" flag
+    setHasRunOnce(true);
     setRunning(false);
-    // small timeout to re-trigger CSS transition
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         setRunning(true);
       });
     });
   };
+
+  // 🧠 Live narration based on current values — fun + condensed
+  const narrationLines = useMemo(() => {
+    const lines: string[] = [];
+
+    // 1) Friendly tone
+    if (!hasRunOnce) {
+      lines.push("👋 Hey physicist! Meet your test block.");
+    } else if (running && force > 0) {
+      lines.push("🚀 Nice push — the block is sliding!");
+    } else {
+      lines.push("🔁 Tweak the knobs and run it again.");
+    }
+
+    // 2) Super short stats summary
+    lines.push(
+      `m = ${mass.toFixed(1)} kg · a = ${acc.toFixed(
+        1
+      )} m/s² → F ≈ ${force.toFixed(1)} N`
+    );
+
+    // 3) Behaviour description (one short line)
+    if (force === 0 || acc === 0) {
+      lines.push("Right now F = 0 N, so nothing moves. Try adding acceleration.");
+    } else if (force < 20) {
+      lines.push("Small force: a gentle nudge — the block starts to creep forward.");
+    } else if (force < 60) {
+      lines.push("Medium force: a solid shove — it speeds up clearly on the track.");
+    } else {
+      lines.push("Huge force: mega shove! Imagine a rocket-powered shopping cart.");
+    }
+
+    return lines;
+  }, [mass, acc, force, hasRunOnce, running]);
 
   return (
     <div className="rounded-2xl border border-cyan-500/60 bg-slate-950/90 p-4 flex flex-col gap-3 h-full">
@@ -34,8 +92,8 @@ export const FormulaSimulator: React.FC = () => {
             Live Formula Playground
           </h2>
           <p className="text-[11px] text-slate-400">
-            Explore Newton&apos;s Second Law: F = m · a. Change values, then run
-            the 2D simulation.
+            Newton&apos;s Second Law in action. Adjust values, then run the 2D
+            simulation with live commentary.
           </p>
         </div>
         <button
@@ -47,7 +105,14 @@ export const FormulaSimulator: React.FC = () => {
         </button>
       </div>
 
-      {/* Formula row */}
+      {sourceLabel && (
+        <div className="text-[10px] text-slate-300 bg-slate-900/80 border border-slate-700 rounded-full px-3 py-1 inline-flex items-center gap-1">
+          <span className="text-cyan-400">●</span>
+          <span>Current source: {sourceLabel}</span>
+        </div>
+      )}
+
+      {/* Formula controls */}
       <div className="rounded-xl bg-slate-900/80 border border-slate-700 px-3 py-2 flex flex-col gap-2">
         <div className="flex items-center gap-2 text-sm text-slate-100 font-semibold">
           <span>F</span>
@@ -99,22 +164,37 @@ export const FormulaSimulator: React.FC = () => {
         </div>
       </div>
 
-      {/* 2D scene */}
-      <div className="flex-1 rounded-xl bg-slate-950 border border-slate-800 px-4 py-3 flex flex-col gap-2">
+      {/* Live narration */}
+      <div className="rounded-xl bg-slate-950 border border-slate-800 px-3 py-2 text-[11px] text-slate-200 flex flex-col gap-1 h-20 md:h-24 overflow-y-auto">
+        <div className="flex items-center gap-1 mb-1">
+          <span className="text-xs">💬</span>
+          <span className="text-[11px] font-semibold text-cyan-200">
+            Quick lab notes
+          </span>
+        </div>
+        {narrationLines.map((line, idx) => (
+          <p key={idx} className="leading-snug">
+            {line}
+          </p>
+        ))}
+      </div>
+
+      {/* 2D sandbox – slightly smaller height */}
+      <div className="rounded-xl bg-slate-950 border border-slate-800 px-4 py-3 flex flex-col gap-2 h-52 md:h-56">
         <div className="flex items-center justify-between text-[11px] text-slate-400">
-          <span>2D Visualization (top-down)</span>
+          <span>2D sandbox (top-down)</span>
           <span>
-            Stronger force ➜ block slides further & arrow grows longer.
+            Block, ground, and force arrow act as a tiny virtual lab screen.
           </span>
         </div>
 
-        <div className="relative mt-3 flex-1 rounded-lg bg-gradient-to-br from-slate-900 to-slate-950 overflow-hidden border border-slate-800">
+        <div className="relative mt-2 flex-1 rounded-lg bg-gradient-to-br from-slate-900 to-slate-950 overflow-hidden border border-slate-800">
           {/* Ground */}
           <div className="absolute left-0 right-0 bottom-6 h-1.5 bg-slate-700/80" />
 
-          {/* Block (object) */}
+          {/* Block / cylinder proxy */}
           <div
-            className="absolute bottom-6 left-6 w-10 h-10 rounded-md bg-gradient-to-br from-cyan-400 to-blue-500 shadow-lg shadow-cyan-500/40 transition-transform duration-700 ease-out"
+            className="absolute bottom-6 left-6 w-9 h-9 rounded-lg bg-gradient-to-br from-cyan-400 to-blue-500 shadow-lg shadow-cyan-500/40 transition-transform duration-700 ease-out"
             style={{
               transform: running ? `translateX(${travel}px)` : "translateX(0px)",
             }}
@@ -124,7 +204,7 @@ export const FormulaSimulator: React.FC = () => {
           <div
             className="absolute bottom-20 left-6 flex items-center gap-1 transition-all duration-700 ease-out"
             style={{
-              width: 40 + clampedForce, // arrow length
+              width: 35 + clampedForce,
             }}
           >
             <div className="h-1 bg-rose-500 flex-1" />
@@ -139,13 +219,6 @@ export const FormulaSimulator: React.FC = () => {
             F = {force.toFixed(1)} N
           </div>
         </div>
-
-        <p className="text-[10px] text-slate-500 mt-1">
-          This is intentionally simple and 2D so it feels like a tiny physics
-          sandbox. You can extend this pattern for other formulas (projectile
-          motion, energy, etc.) and attach more shapes / objects like in a
-          Unity-style editor.
-        </p>
       </div>
     </div>
   );

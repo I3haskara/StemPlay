@@ -1,0 +1,4 @@
+# Environment Variables - DO NOT COMMIT
+.env
+.env.local
+.env.*.local
