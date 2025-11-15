@@ -1,0 +1,30 @@
+# =========================================================
+# CodeRabbit Configuration for STEMPlay AI
+# =========================================================
+# This file tells CodeRabbit what to review if you enable
+# the GitHub App on this repository.
+# In your video / README, you can mention:
+#  "We use CodeRabbit to continuously review changes to
+#   both the simulation frontend and the AI backend."
+# =========================================================
+
+version: 1
+
+reviews:
+  # Files and folders to focus on
+  path_inclusions:
+    - "src/**"
+    - "backend/src/**"
+  path_exclusions:
+    - "dist/**"
+    - "node_modules/**"
+
+  # Enable concise summaries of each review
+  summarize: true
+
+style:
+  # Keep code readable but practical
+  max_line_length: 100
+  language: en
+
+# Optional: you can tweak rules later in the UI if needed.

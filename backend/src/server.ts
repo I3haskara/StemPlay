@@ -4,14 +4,28 @@ import bodyParser from "body-parser";
 import cors from "cors";
 import parseDocumentRoute from "./routes/parseDocument.js";
 import youtubeParseRoute from "./routes/youtubeParse.js";
+// import sentryDemoRoute from "./routes/sentryDemo.js";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+/*
+===========================================================
+ EXPRESS SERVER CONFIG
+===========================================================
+ - CORS: allow Vite dev server on http://localhost:5173 & 5174
+ - Routes:
+    /api/health         : basic health check
+    /api/parse-document : Daytona-powered formula parser
+    /api/youtube-parse  : YouTube transcript parser
+    /api/sentry-demo    : triggers Sentry error for demo
+===========================================================
+*/
+
 // Allow frontend dev server to call backend
 app.use(
   cors({
-    origin: "http://localhost:5174", // your Vite dev URL
+    origin: ["http://localhost:5173", "http://localhost:5174"], // support both Vite ports
   })
 );
 
@@ -25,8 +39,11 @@ app.get("/api/health", (_req, res) => {
 // Daytona-powered route
 app.use("/api", parseDocumentRoute);
 
-// NEW: YouTube parser route
+// YouTube parser route
 app.use("/api", youtubeParseRoute);
+
+// Sentry demo endpoint
+// app.use("/api", sentryDemoRoute);
 
 app.listen(PORT, () => {
   console.log("Backend running on port " + PORT);

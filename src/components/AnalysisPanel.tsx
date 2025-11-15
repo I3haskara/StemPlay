@@ -4,6 +4,7 @@
 import React, { DragEvent, useState } from "react";
 import { FormulaSimulator } from "./FormulaSimulator";
 import DaytonaAutoParser from "./DaytonaAutoParser";
+import { SocialSharePanel } from "./SocialSharePanel";
 
 type InputKind = "video" | "pdfNotes" | "formula";
 
@@ -38,7 +39,7 @@ export const AnalysisPanel: React.FC = () => {
   }
 
   async function handleAnalyzeVideo() {
-    if (!youtubeUrl || !youtubeUrl.includes("youtube.com")) {
+    if (!youtubeUrl || (!youtubeUrl.includes("youtube.com") && !youtubeUrl.includes("youtu.be"))) {
       setYoutubeError("Please enter a valid YouTube URL");
       return;
     }
@@ -60,18 +61,31 @@ export const AnalysisPanel: React.FC = () => {
 
       const data = await res.json();
       
+      if (!data.success) {
+        throw new Error(data.error || "Failed to parse video");
+      }
+      
       // Update source label
       updateSourceFromVideo(youtubeUrl);
       
       // Auto-populate text input with formulas found
       if (data.formulas && data.formulas.length > 0) {
         const formulaText = data.formulas
-          .map((f: any) => `${f.formula} - ${f.description || 'No description'}`)
-          .join("\n");
+          .map((f: any) => {
+            let text = `${f.formula}`;
+            if (f.description) text += ` - ${f.description}`;
+            if (f.example) text += `\nExample: ${f.example}`;
+            if (f.source) text += `\n(${f.source})`;
+            return text;
+          })
+          .join("\n\n");
         setTextInput(formulaText);
-        showUploadToast(`Found ${data.formulas.length} formula(s) from video transcript!`);
+        
+        showUploadToast(
+          `✅ Daytona AI found ${data.formulas.length} formula(s)! ${data.daytonaInfo?.feature || ''}`
+        );
       } else {
-        showUploadToast("Video analyzed, but no formulas detected.");
+        showUploadToast("Video analyzed by Daytona, but no formulas detected.");
       }
     } catch (err: any) {
       setYoutubeError(err.message || "Failed to analyze video");
@@ -124,44 +138,43 @@ export const AnalysisPanel: React.FC = () => {
 
       {/* Top bar */}
       <header 
-        className="w-full px-6 md:px-10 py-4 flex items-center justify-between border-b border-slate-800/80 bg-cover bg-center bg-no-repeat relative"
+        className="w-full px-6 md:px-10 py-6 flex flex-col items-center justify-center gap-3 border-b border-slate-800/80 bg-cover bg-center bg-no-repeat relative"
         style={{ backgroundImage: 'url("/top panel background .png")' }}
       >
         {/* Background overlay for readability */}
         <div className="absolute inset-0 bg-slate-950/60" />
         
-        {/* Content */}
-        <div className="relative z-10 flex items-center gap-3">
+        {/* Logo and tagline centered */}
+        <div className="relative z-10 flex flex-col items-center gap-2">
           <img 
             src="/logo.png" 
             alt="STEMPlay AI Logo" 
-            className="h-10 w-auto object-contain"
+            className="h-16 md:h-20 w-auto object-contain"
           />
-          <span className="hidden md:inline text-[11px] text-slate-400">
+          <span 
+            className="text-sm md:text-base font-bold tracking-wide uppercase"
+            style={{
+              color: '#FFD700',
+              textShadow: '2px 2px 4px rgba(0,0,0,0.8), 0 0 10px rgba(255,215,0,0.5), -1px -1px 0 rgba(255,215,0,0.3), 1px 1px 0 rgba(139,69,19,0.8)',
+              transform: 'perspective(500px) rotateX(10deg)',
+            }}
+          >
             Visualize. Simulate. Understand.
           </span>
         </div>
-        <div className="relative z-10 flex items-center gap-3">
-          <div className="inline-flex rounded-full bg-slate-900 border border-slate-700 p-1 text-[11px]">
-            <button className="px-3 py-1 rounded-full bg-emerald-500 text-slate-950 font-semibold shadow shadow-emerald-600/40">
-              Dashboard
-            </button>
-            <button className="px-3 py-1 rounded-full text-slate-300 hover:bg-slate-800 transition-colors">
-              Simulation Lab
-            </button>
-          </div>
-          <div className="hidden md:flex items-center text-[10px] bg-slate-900/80 border border-slate-700 rounded-full px-3 py-1 text-slate-300 max-w-xs truncate">
-            <span className="text-cyan-400 mr-1">●</span>
-            <span className="truncate">Source: {currentSourceLabel}</span>
-          </div>
+
+        {/* Source indicator centered below */}
+        <div className="relative z-10 flex items-center text-xs bg-slate-900/90 border border-slate-700 rounded-full px-4 py-2 text-slate-300">
+          <span className="text-cyan-400 mr-2">●</span>
+          <span>Source: {currentSourceLabel}</span>
         </div>
       </header>
 
       {/* Main layout */}
       <main className="flex-1 flex justify-center items-stretch p-6 md:p-10">
-        <div className="w-full max-w-6xl grid gap-6 lg:grid-cols-[1.3fr,1.2fr]">
+        <div className="w-full max-w-7xl flex gap-6">
           {/* LEFT: input panel */}
-          <div className="rounded-3xl border border-slate-800 bg-slate-950/90 shadow-2xl px-5 py-6 flex flex-col gap-4">
+          <div className="flex-1 min-w-0 rounded-3xl border border-slate-800 bg-slate-950/90 shadow-2xl px-5 py-6 flex flex-col gap-4">
             <div className="flex flex-col gap-1">
               <h1 className="text-xl md:text-2xl font-semibold tracking-tight">
                 STEMPlay AI — Visual Physics Editor
@@ -272,7 +285,7 @@ export const AnalysisPanel: React.FC = () => {
               )}
 
               <p className="text-[10px] text-slate-500">
-                This feature fetches the YouTube transcript and uses Daytona AI to automatically extract physics formulas. The formulas will appear in the text input below.
+                This feature fetches the YouTube transcript and uses Daytona AI workspace automation to intelligently extract physics formulas. The formulas will appear in the text input below with suggested values for the sandbox editor.
               </p>
             </section>
 
@@ -404,21 +417,29 @@ export const AnalysisPanel: React.FC = () => {
             </section>
           </div>
 
-          {/* RIGHT: visual sandbox */}
-          <div className="rounded-3xl border border-slate-800 bg-slate-950/95 shadow-2xl p-4 flex flex-col gap-3">
-            <h2 className="text-xs md:text-sm font-semibold uppercase tracking-wide text-slate-300">
-              2 · Visual formula sandbox
-            </h2>
-            <p className="text-[11px] text-slate-400 mb-1">
-              This panel is where formulas become playable 2D examples{" "}
-              <span className="text-slate-200 font-semibold">
-                with live text narration
-              </span>
-              . For now we showcase Newton&apos;s Second Law.
-            </p>
-            <FormulaSimulator
-              sourceLabel={currentSourceLabel}
-              formulaText={textInput}
+          {/* RIGHT: visual sandbox + social panel stacked */}
+          <div className="flex flex-col gap-4 w-full lg:w-[520px]">
+            <div className="rounded-3xl border border-slate-800 bg-slate-950/95 shadow-2xl p-4 flex flex-col gap-3">
+              <h2 className="text-base md:text-lg font-bold uppercase tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-violet-500">
+                Visual Formula Sandbox
+              </h2>
+              <p className="text-[11px] text-slate-400 mb-1">
+                This panel is where formulas become playable 2D examples{" "}
+                <span className="text-slate-200 font-semibold">
+                  with live text narration
+                </span>
+                . For now we showcase Newton&apos;s Second Law.
+              </p>
+              <FormulaSimulator
+                sourceLabel={currentSourceLabel}
+                formulaText={textInput}
+              />
+            </div>
+
+            {/* Social Share Panel */}
+            <SocialSharePanel
+              currentLessonTitle="Newton's Second Law – F = m · a"
+              currentLessonSummary={textInput || "m = 4.0 kg, a = 2.0 m/s² → F ≈ 8.0 N"}
             />
           </div>
         </div>

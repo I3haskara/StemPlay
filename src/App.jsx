@@ -1,11 +1,21 @@
 // =====================================
 // File: src/App.tsx
 // =====================================
-import React from "react";
+import React, { useState } from "react";
 import { AnalysisPanel } from "./components/AnalysisPanel";
+import { OnboardingOverlay } from "./components/OnboardingOverlay";
 
 function App() {
-  return <AnalysisPanel />;
+  const [showOnboarding, setShowOnboarding] = useState(true);
+
+  return (
+    <>
+      <AnalysisPanel />
+      {showOnboarding && (
+        <OnboardingOverlay onDone={() => setShowOnboarding(false)} />
+      )}
+    </>
+  );
 }
 
 export default App;
